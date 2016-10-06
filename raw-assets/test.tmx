@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="24" tileheight="24" nextobjectid="7">
+ <tileset firstgid="1" name="tileset a" tilewidth="24" tileheight="24" tilecount="12">
+  <image source="../assets/images/tileset-a.png" width="72" height="96"/>
+ </tileset>
+ <tileset firstgid="13" name="pickups" tilewidth="16" tileheight="16" tilecount="4">
+  <tileoffset x="4" y="-4"/>
+  <image source="../assets/images/pickups.png" width="32" height="32"/>
+ </tileset>
+ <imagelayer name="Background">
+  <image source="../assets/images/slime.png"/>
+ </imagelayer>
+ <layer name="Tile Layer 1" width="10" height="10">
+  <data encoding="csv">
+10,8,8,8,8,8,8,8,8,6,
+10,0,0,0,0,0,0,0,0,6,
+10,0,0,0,0,0,14,0,0,6,
+10,1,2,3,0,0,0,0,0,6,
+10,0,0,0,0,0,0,5,12,6,
+10,0,0,0,0,0,0,6,10,6,
+10,0,0,0,0,0,0,6,10,6,
+10,0,0,0,0,0,5,11,12,6,
+10,5,11,11,11,11,11,11,12,6,
+10,6,8,8,8,8,8,8,10,6
+</data>
+ </layer>
+ <objectgroup name="Colliders">
+  <properties>
+   <property name="collidable" value="true"/>
+  </properties>
+  <object id="2" x="0" y="192" width="240" height="24">
+   <properties>
+    <property name="collidable" value="true"/>
+   </properties>
+  </object>
+  <object id="3" x="144" y="168" width="72" height="24">
+   <properties>
+    <property name="collidable" value="true"/>
+   </properties>
+  </object>
+  <object id="6" x="24" y="72" width="72" height="24">
+   <properties>
+    <property name="collidable" value="true"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>
