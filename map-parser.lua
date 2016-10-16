@@ -54,13 +54,15 @@ local function load_tileset(map_dir, data, display, out_tiles)
     -- we need to know how many quads this batch will be drawing so we get the
     -- size of the screen in tiles (for this tileset - each tileset may have
     -- different size tiles)
-    local display_tx = math.floor(display.px / display.scale / data.tilewidth)
-    local display_ty = math.floor(display.py / display.scale / data.tileheight)
+    -- XXX note that are using tile dimensions from display, this is the global
+    -- tilesize and all tiles must base their positions off these coordinates.
+    local display_tw = math.floor(display.px / display.scale / display.tilewidth)
+    local display_th = math.floor(display.py / display.scale / display.tileheight)
     
     -- a batch is created for this tileset. batches are used to draw the same
     -- texture repeatedly. NOTE that this batch is for this tilest, a layer
     -- however is allowed to contain tiles from many tilesets.
-    local batch = love.graphics.newSpriteBatch(image, display_tw * display_ty)
+    local batch = love.graphics.newSpriteBatch(image, display_tw * display_th)
 
     for x = 0, tiles_accross do 
         for y = 0, tiles_down do
@@ -125,16 +127,17 @@ end
 -- using frame buffers or canvases) if we want to draw layers one at a time then
 -- we would have to draw the layer to an intermediate object to preserve the
 -- ordering of tiles from the source batches.
-function draw(map, x, y, display)
-    local display_tx = math.floor(display.px / display.scale / map.data.tilewidth)
-    local display_ty = math.floor(display.py / display.scale / map.data.tileheight)
+function draw(map, offset_x, offset_y, display)
+    -- note that we are using the global tilewidth and height here, not per
+    -- layer.
+    local display_tw = math.floor(display.px / display.scale / map.data.tilewidth)
+    local display_th = math.floor(display.py / display.scale / map.data.tileheight)
    
--- tilesDisplayWidth is calculated from map
-
     -- draw layers one at a time
     for _, layer in ipairs(map.draw_layers) do
-        for x=0, display_tx -1 do
-            for y=0, display_ty -1 do
+        for x=0, display_tw -1 do
+            for y=0, display_th -1 do
+
 --                local map_tx = layer.data
 --                 local tileid = map.tiles[map[x+math.floor(mapX)][y+math.floor(mapY)]],                tilesetBatch:add(
 --                x*tileSize, y*tileSize)
