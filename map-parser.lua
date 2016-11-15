@@ -36,11 +36,12 @@ end
 -- load a tileset - make a dictionary of all the tiles it contains with the key
 -- being that tiles id and store a reference to the batch for this tile in the
 -- tiles data structude
-local function load_tileset(map_dir, data, display, out_tiles)
+local function load_tileset(map_dir, data, display, 
+                            map_tilewidth, map_tileheight, out_tiles)
     --  load the asset for this tileset and set its sampling so we can scale it
     --  cleannly
     local image_path = normalize_path(map_dir .. data.image)
-    image = love.graphics.newImage(image_path)
+    local image = love.graphics.newImage(image_path)
     image:setFilter("nearest", "linear")
     
     -- how many tiles are there in this tilsets image
@@ -56,8 +57,10 @@ local function load_tileset(map_dir, data, display, out_tiles)
     -- different size tiles)
     -- XXX note that are using tile dimensions from display, this is the global
     -- tilesize and all tiles must base their positions off these coordinates.
-    local display_tw = math.floor(display.px / display.scale / display.tilewidth)
-    local display_th = math.floor(display.py / display.scale / display.tileheight)
+    local display_tw = math.floor(display.width / display.scale / 
+                                  map_tilewidth)
+    local display_th = math.floor(display.height / display.scale / 
+                                  map_tileheight)
     
     -- a batch is created for this tileset. batches are used to draw the same
     -- texture repeatedly. NOTE that this batch is for this tilest, a layer
@@ -67,20 +70,28 @@ local function load_tileset(map_dir, data, display, out_tiles)
     for x = 0, tiles_accross do 
         for y = 0, tiles_down do
             out_tiles[tile_index] = {
+                data = data,
                 batch = batch,
-                quad = love.graphics.newQuad(x * data.tilewidth,
-                                             y * data.tileheight,
-                                             data.tilewidth,
-                                             data.tileheight,
-                                             image:getWidth(),
-                                             image:getHeight())
+                quad = love.graphics.newQuad(
+                        x * data.tilewidth, y * data.tileheight,
+                        data.tilewidth, data.tileheight,
+                        image:getWidth(), image:getHeight())
             }
         end
     end
 end
 
--- load the map at the path and return a data object representing this map
+-- Returns an object containing:
+--      tiles: An array of tilequads
+--      layers: drawable layers in order
+--      data: the raw map data
 function parser:load(path)
+    local display = {
+        scale = 1,
+        width = 320,
+        height = 240 
+    }
+
     local data = love.filesystem.load(path)()
     local map_dir = path:gsub("(.*/)(.*)", "%1")
     print(data.version)
@@ -95,7 +106,8 @@ function parser:load(path)
     local draw_layers = {}
     -- load all of the tilesets into memory for this map
     for _, tileset in ipairs(data.tilesets) do
-        load_tileset(map_dir, tileset, {scale = 1, px=320, py=240}, tiles)
+        load_tileset(map_dir, tileset, display, data.tilewidth, data.tileheight,
+                     tiles)
     end
 
     -- process all the layers in this map
@@ -108,6 +120,7 @@ function parser:load(path)
             print("object group found - not implemented")
         end
         if layer.type == "tilelayer" then
+            print("tile layer group found: " .. #draw_layers + 1)
             draw_layers[#draw_layers + 1] = layer
         end
     end
@@ -115,9 +128,9 @@ function parser:load(path)
     -- iterate over layers
     --      load tiles into tilelayer
 
-    return map {
+    return {
         tiles = tiles,
-        layers = layers,
+        layers = draw_layers,
         data = data
     }
 end
@@ -127,28 +140,59 @@ end
 -- using frame buffers or canvases) if we want to draw layers one at a time then
 -- we would have to draw the layer to an intermediate object to preserve the
 -- ordering of tiles from the source batches.
-function draw(map, offset_x, offset_y, display)
-    -- note that we are using the global tilewidth and height here, not per
-    -- layer.
-    local display_tw = math.floor(display.px / display.scale / map.data.tilewidth)
-    local display_th = math.floor(display.py / display.scale / map.data.tileheight)
+function draw(map, view_x, view_y, display)
+    local tile_w = map.data.tilewidth
+    local tile_h = map.data.tileheight
+    
+    -- the display dimensions in tiles
+    -- note that we are using the global tilewidth and height here, not per layer
+    local display_tw = math.floor(display.pixels_w / display.scale / tile_w)
+    local display_th = math.floor(display.pixels_h / display.scale / tile_h)
    
-    -- draw layers one at a time
+    -- the map position in tiles
+    local map_tx = math.floor(view_x / tile_w)
+    local map_ty = math.floor(view_y / tile_h)
+
+    -- the offset in pixels (for smooth scrolling)
+    local offset_x = math.fmod(view_x / tile_w)
+    local offset_y = math.fmod(view_y / tile_h)
+    
+    -- draw layers one at a time - we still need to draw all the batches for
+    -- each layer in case that batch is used in the layer or there are animated
+    -- tiles in that layer.
     for _, layer in ipairs(map.draw_layers) do
+        
+        -- this is a cache of tilesetBatches to be drawn for this layer
+        local batches = {}
+
         for x=0, display_tw -1 do
             for y=0, display_th -1 do
+                local layer_tx = map_tx + x
+                local layer_ty = map_ty + y
 
---                local map_tx = layer.data
---                 local tileid = map.tiles[map[x+math.floor(mapX)][y+math.floor(mapY)]],                tilesetBatch:add(
---                x*tileSize, y*tileSize)
+                local tile_index = layer_ty * layer.width + layer_tx 
+                local tile = map.tiles[tile_index]
+
+                if not batches[tile.data.name] then
+                    batches[tile.data.name] = tile.batch
+                    batch:clear()
+                end
+                
+                -- where to we draw the tile in display pixels
+                local tile_px = layer_tx * tile_w + tile.data.tileoffset.x;
+                local tile_py = layer_ty * tile_h + tile.data.tileoffset.y;
+
+                tile.batch:add(tile.quad, tile_px, tile_py, 0)
             end
         end
-
+        
+        -- now draw all the batches we used in this layer
+        for _, batch in ipairs(batches) do
+            batch:flush()
+            love.graphics:draw(batch, offset_x, offset_y, 0,
+                               display.scale, display.scale)
+        end
     end
-  -- clear all batches
-  --tilesetBatch:clear()
- --flush all tilesets
-  --tilesetBatch:flush()
 end
 
 return parser
