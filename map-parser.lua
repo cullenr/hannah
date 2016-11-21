@@ -1,4 +1,6 @@
-local parser = {}
+local log = require "lib.log"
+
+local module = {}
 
 -- How the map tools work
 --
@@ -15,7 +17,7 @@ local parser = {}
 -- todo move this out of here - currently it is used to join the paths that the
 -- map file was loaded at and the relative paths defined within the map file.
 -- These paths point to assets associated with this map
-function normalize_path(path)
+local function normalize_path(path)
 	local np_gen1,np_gen2  = '[^SEP]+SEP%.%.SEP?','SEP+%.?SEP'
 	local np_pat1, np_pat2 = np_gen1:gsub('SEP','/'), np_gen2:gsub('SEP','/')
 	local k
@@ -57,9 +59,9 @@ local function load_tileset(map_dir, data, display,
     -- different size tiles)
     -- XXX note that are using tile dimensions from display, this is the global
     -- tilesize and all tiles must base their positions off these coordinates.
-    local display_tw = math.floor(display.width / display.scale / 
+    local display_tw = math.floor(display.pixels_w / display.scale / 
                                   map_tilewidth)
-    local display_th = math.floor(display.height / display.scale / 
+    local display_th = math.floor(display.pixels_h / display.scale / 
                                   map_tileheight)
     
     -- a batch is created for this tileset. batches are used to draw the same
@@ -67,8 +69,12 @@ local function load_tileset(map_dir, data, display,
     -- however is allowed to contain tiles from many tilesets.
     local batch = love.graphics.newSpriteBatch(image, display_tw * display_th)
 
-    for x = 0, tiles_accross do 
-        for y = 0, tiles_down do
+    log.debug("loading tileset")
+    log.debug("dimensions", tiles_accross, tiles_down)
+
+    for x = 0, tiles_accross - 1 do 
+        for y = 0, tiles_down -1 do
+
             out_tiles[tile_index] = {
                 data = data,
                 batch = batch,
@@ -77,6 +83,10 @@ local function load_tileset(map_dir, data, display,
                         data.tilewidth, data.tileheight,
                         image:getWidth(), image:getHeight())
             }
+
+            log.debug("loaded tile", tile_index)
+
+            tile_index = tile_index + 1
         end
     end
 end
@@ -85,16 +95,10 @@ end
 --      tiles: An array of tilequads
 --      layers: drawable layers in order
 --      data: the raw map data
-function parser:load(path)
-    local display = {
-        scale = 1,
-        width = 320,
-        height = 240 
-    }
-
+function module:load(path, display)
     local data = love.filesystem.load(path)()
     local map_dir = path:gsub("(.*/)(.*)", "%1")
-    print(data.version)
+    log.debug(data.version)
     -- this dictionary contains a key for each tile in this map, multiple
     -- tilesets are contained within. Each value contains a reference to a
     -- sprite batch for drawing and a quad to access the correct part of the
@@ -113,14 +117,14 @@ function parser:load(path)
     -- process all the layers in this map
     for _, layer in ipairs(data.layers) do 
         if layer.type == "imagelayer" then
-            print("image layer found - not implemented")
+            log.debug("image layer found - not implemented")
             -- TODO add this to the draw_layers
         end
         if layer.type == "objectgroup" then
-            print("object group found - not implemented")
+            log.debug("object group found - not implemented")
         end
         if layer.type == "tilelayer" then
-            print("tile layer group found: " .. #draw_layers + 1)
+            log.debug("tile layer group found: " .. #draw_layers + 1)
             draw_layers[#draw_layers + 1] = layer
         end
     end
@@ -130,7 +134,7 @@ function parser:load(path)
 
     return {
         tiles = tiles,
-        layers = draw_layers,
+        draw_layers = draw_layers,
         data = data
     }
 end
@@ -140,7 +144,7 @@ end
 -- using frame buffers or canvases) if we want to draw layers one at a time then
 -- we would have to draw the layer to an intermediate object to preserve the
 -- ordering of tiles from the source batches.
-function draw(map, view_x, view_y, display)
+function module:draw(map, view_x, view_y, display)
     local tile_w = map.data.tilewidth
     local tile_h = map.data.tileheight
     
@@ -148,51 +152,76 @@ function draw(map, view_x, view_y, display)
     -- note that we are using the global tilewidth and height here, not per layer
     local display_tw = math.floor(display.pixels_w / display.scale / tile_w)
     local display_th = math.floor(display.pixels_h / display.scale / tile_h)
-   
+  
+	-- get the number of tiles to draw, make sure we stay in the bounds of the map	
+	local draw_tw = math.min(display_tw, map.data.width)
+	local draw_th = math.min(display_th, map.data.height)
+ 
     -- the map position in tiles
-    local map_tx = math.floor(view_x / tile_w)
-    local map_ty = math.floor(view_y / tile_h)
+    local offset_tx = math.floor(view_x / tile_w)
+    local offset_ty = math.floor(view_y / tile_h)
 
     -- the offset in pixels (for smooth scrolling)
-    local offset_x = math.fmod(view_x / tile_w)
-    local offset_y = math.fmod(view_y / tile_h)
+    local offset_mod_px = math.fmod(view_x, tile_w)
+    local offset_mod_py = math.fmod(view_y,  tile_h)
     
+    -- this is a cache of tilesetBatches to be drawn for this layer    
+    local batches = {}
+   
+    log.debug("start", display_tw, display_th, offset_tx, offset_ty, offset_mod_px, offset_mod_py)
+    log.debug("tiles", map.tiles, #map.tiles)
+
     -- draw layers one at a time - we still need to draw all the batches for
     -- each layer in case that batch is used in the layer or there are animated
     -- tiles in that layer.
     for _, layer in ipairs(map.draw_layers) do
-        
-        -- this is a cache of tilesetBatches to be drawn for this layer
-        local batches = {}
+		for y = 0, draw_tw - 1 do
+			for x = 0, draw_tw - 1 do
+				-- add the course offset in tiles so we can get the correct region
+				local layer_tx = offset_tx + x
+                local layer_ty = offset_ty + y
 
-        for x=0, display_tw -1 do
-            for y=0, display_th -1 do
-                local layer_tx = map_tx + x
-                local layer_ty = map_ty + y
+				-- get the tile add one as we are in lua land
+                local tile_index = layer_ty * layer.width + layer_tx + 1 
+                local tile_id = layer.data[tile_index]
+				
+	
+				print("xy        ", x, y)
+				print("layer_txy ", layer_tx, layer_ty)
+				print("map_txy   ", offset_tx, offset_ty)
+				print("tile_index", tile_index)
+				print("tile_id   ", tile_id)
+				print("================")
+				
+				--  zero means there is no tile 
+				if tile_id ~= 0 then	
+					local tile = map.tiles[tile_id]
 
-                local tile_index = layer_ty * layer.width + layer_tx 
-                local tile = map.tiles[tile_index]
+					if not batches[tile.data.name] then
+						batches[tile.data.name] = tile.batch
+						-- clear the batch now as we should only run this once
+						tile.batch:clear()
+					end
 
-                if not batches[tile.data.name] then
-                    batches[tile.data.name] = tile.batch
-                    batch:clear()
-                end
-                
-                -- where to we draw the tile in display pixels
-                local tile_px = layer_tx * tile_w + tile.data.tileoffset.x;
-                local tile_py = layer_ty * tile_h + tile.data.tileoffset.y;
+					-- where to we draw the tile in display pixels
+					local tile_px = layer_tx * tile_w + tile.data.tileoffset.x;
+					local tile_py = layer_ty * tile_h + tile.data.tileoffset.y;
 
-                tile.batch:add(tile.quad, tile_px, tile_py, 0)
+					tile.batch:add(tile.quad, tile_px, tile_py, 0)
+				end
             end
         end
-        
+       
+log.debug("num batches", #batches)
+
+
         -- now draw all the batches we used in this layer
         for _, batch in ipairs(batches) do
             batch:flush()
-            love.graphics:draw(batch, offset_x, offset_y, 0,
+            love.graphics:draw(batch, offset_mod_px, offset_mod_py, 0,
                                display.scale, display.scale)
         end
     end
 end
 
-return parser
+return module

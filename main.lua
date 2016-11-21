@@ -1,11 +1,29 @@
-local parser = require "map-parser"
+local map = require "map-parser"
 local anim8 = require "lib.anim8"
+local log = require "lib.log"
 local time
 local hannah
 local run
 
-function love.load()
-    parser:load("assets/maps/test.lua")
+local map_data
+local display = {
+    scale = 1,
+    pixels_w = 320,
+    pixels_h = 240 
+}
+
+
+function love.load(args)
+	local a = {
+		a=123, 
+		b=456
+		}
+	log.info("arg", nil, args, {a=123}, a)
+
+love.event.quit()
+
+    -- here we have some dummy data for the display
+    map_data = map:load("assets/maps/test.lua", display)
 
     love.graphics.setDefaultFilter("nearest")
 	myShader = love.graphics.newShader[[
@@ -44,4 +62,9 @@ function love.draw()
 	run:draw(hannah, 250, 100, 0, 8)
 	--love.graphics.draw(hannah, 250, 100, 0, 8, 8)
 	love.graphics.setShader()
+    
+    print("drawing map")
+    map:draw(map_data, 0, 0, display)
+
+love.event.quit()
 end
