@@ -43,19 +43,20 @@ local tostring = function(...)
   for i = 1, select('#', ...) do
     local x = select(i, ...)
     if type(x) == "number" then
-      x = round(x, .01)
+        t[#t + 1] = _tostring(round(x, .01))
     else 
     	t[#t + 1] = _tostring(x) .. ","
 	end
+    -- if we just printed table: 0x123ABC then add the contents here
     if type(x) == "table" then
     
-	  t[#t + 1] = _tostring(x) .. " \27[33m{\27[0m" 
+	  t[#t + 1] = _tostring(x) .. (log.usecolor and " \27[33m{\27[0m" or "{")
 	
 	  for k, v in pairs(x) do
 	  	-- only print one table deep
     	t[#t + 1] = k .. "=" ..  _tostring(v) .. ","
 	  end
-	  t[#t + 1] = "\27[33m}\27[0m" 
+	  t[#t + 1] = log.usecolor and "\27[33m}\27[0m" or "}" 
 	end	
   end
   return table.concat(t, " ")

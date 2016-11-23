@@ -44,7 +44,7 @@ local function load_tileset(map_dir, data, display,
     --  cleannly
     local image_path = normalize_path(map_dir .. data.image)
     local image = love.graphics.newImage(image_path)
-    image:setFilter("nearest", "linear")
+    image:setFilter("nearest", "nearest")
     
     -- how many tiles are there in this tilsets image
     local tiles_accross = math.floor(data.imagewidth / data.tilewidth);
@@ -68,12 +68,12 @@ local function load_tileset(map_dir, data, display,
     -- texture repeatedly. NOTE that this batch is for this tilest, a layer
     -- however is allowed to contain tiles from many tilesets.
     local batch = love.graphics.newSpriteBatch(image, display_tw * display_th)
-
+    
     log.debug("loading tileset")
     log.debug("dimensions", tiles_accross, tiles_down)
 
-    for x = 0, tiles_accross - 1 do 
-        for y = 0, tiles_down -1 do
+    for y = 0, tiles_down -1 do
+        for x = 0, tiles_accross - 1 do 
 
             out_tiles[tile_index] = {
                 data = data,
@@ -98,7 +98,7 @@ end
 function module:load(path, display)
     local data = love.filesystem.load(path)()
     local map_dir = path:gsub("(.*/)(.*)", "%1")
-    log.debug(data.version)
+    log.debug("loaded map version: ", data.version)
     -- this dictionary contains a key for each tile in this map, multiple
     -- tilesets are contained within. Each value contains a reference to a
     -- sprite batch for drawing and a quad to access the correct part of the
@@ -168,9 +168,6 @@ function module:draw(map, view_x, view_y, display)
     -- this is a cache of tilesetBatches to be drawn for this layer    
     local batches = {}
    
-    log.debug("start", display_tw, display_th, offset_tx, offset_ty, offset_mod_px, offset_mod_py)
-    log.debug("tiles", map.tiles, #map.tiles)
-
     -- draw layers one at a time - we still need to draw all the batches for
     -- each layer in case that batch is used in the layer or there are animated
     -- tiles in that layer.
@@ -183,42 +180,44 @@ function module:draw(map, view_x, view_y, display)
 
 				-- get the tile add one as we are in lua land
                 local tile_index = layer_ty * layer.width + layer_tx + 1 
-                local tile_id = layer.data[tile_index]
+                local tile_id = layer.data[tile_index] 
 				
 	
-				print("xy        ", x, y)
-				print("layer_txy ", layer_tx, layer_ty)
-				print("map_txy   ", offset_tx, offset_ty)
-				print("tile_index", tile_index)
-				print("tile_id   ", tile_id)
-				print("================")
+				--log.debug("xy        ", x, y)
+				--log.debug("layer_txy ", layer_tx, layer_ty)
+				--log.debug("map_txy   ", offset_tx, offset_ty)
+				--log.debug("tile_index", tile_index)
+				--log.debug("tile_id   ", tile_id)
+				--log.debug("================")
 				
 				--  zero means there is no tile 
 				if tile_id ~= 0 then	
+                    -- add one to the array as the tile_ids are 0 indexed
 					local tile = map.tiles[tile_id]
 
 					if not batches[tile.data.name] then
-						batches[tile.data.name] = tile.batch
+                        batches[tile.data.name] = tile.batch
 						-- clear the batch now as we should only run this once
 						tile.batch:clear()
 					end
 
 					-- where to we draw the tile in display pixels
 					local tile_px = layer_tx * tile_w + tile.data.tileoffset.x;
-					local tile_py = layer_ty * tile_h + tile.data.tileoffset.y;
+					local tile_py = layer_ty * tile_h - tile.data.tileoffset.y;
 
-					tile.batch:add(tile.quad, tile_px, tile_py, 0)
+					tile.batch:add(tile.quad, tile_px, tile_py, 0) 
 				end
             end
         end
-       
-log.debug("num batches", #batches)
 
+        log.debug("batches", batches)
 
         -- now draw all the batches we used in this layer
-        for _, batch in ipairs(batches) do
+        for _, batch in pairs(batches) do
+            print ("draw that batch", _, batch, offset_mod_px, offset_mod_py, display.scale, display.scale)
+            
             batch:flush()
-            love.graphics:draw(batch, offset_mod_px, offset_mod_py, 0,
+            love.graphics.draw(batch, offset_mod_px, offset_mod_py, 0,
                                display.scale, display.scale)
         end
     end
