@@ -9,10 +9,12 @@ local run
 
 local map_data
 local display = {
-    scale = 2,
-    pixels_w = 320,
-    pixels_h = 240 
+    scale = 1,
+    size_pw = love.graphics.getWidth(),
+    size_ph = love.graphics.getHeight() 
 }
+
+love.graphics.setBackgroundColor(60, 90, 230)
 
 function love.load(args)
 	log.info("args", args)

@@ -59,9 +59,9 @@ local function load_tileset(map_dir, data, display,
     -- different size tiles)
     -- XXX note that are using tile dimensions from display, this is the global
     -- tilesize and all tiles must base their positions off these coordinates.
-    local display_tw = math.floor(display.pixels_w / display.scale / 
+    local display_tw = math.floor(display.size_pw / display.scale / 
                                   map_tilewidth)
-    local display_th = math.floor(display.pixels_h / display.scale / 
+    local display_th = math.floor(display.size_ph / display.scale / 
                                   map_tileheight)
     
     -- a batch is created for this tileset. batches are used to draw the same
@@ -133,6 +133,8 @@ function module:load(path, display)
     --      load tiles into tilelayer
 
     return {
+        size_pw = data.width * data.tilewidth,
+        size_ph = data.height * data.tileheight,
         tiles = tiles,
         draw_layers = draw_layers,
         data = data
@@ -150,8 +152,8 @@ function module:draw(map, view_x, view_y, display)
     
     -- the display dimensions in tiles
     -- note that we are using the global tilewidth and height here, not per layer
-    local display_tw = math.floor(display.pixels_w / display.scale / tile_w)
-    local display_th = math.floor(display.pixels_h / display.scale / tile_h)
+    local display_tw = math.floor(display.size_pw / display.scale / tile_w)
+    local display_th = math.floor(display.size_ph / display.scale / tile_h)
   
 	-- get the number of tiles to draw, make sure we stay in the bounds of the map	
 	local draw_tw = math.min(display_tw, map.data.width)
@@ -159,12 +161,21 @@ function module:draw(map, view_x, view_y, display)
  
     -- the map position in tiles
     local offset_tx = math.floor(view_x / tile_w)
-    local offset_ty = math.floor(view_y / tile_h)
+    local offset_ty = math.floor(view_y / tile_h) 
 
     -- the offset in pixels (for smooth scrolling)
     local offset_mod_px = math.fmod(view_x, tile_w)
     local offset_mod_py = math.fmod(view_y,  tile_h)
     
+    if map.size_pw < display.size_pw then
+        offset_mod_px = offset_mod_px + (display.size_pw - map.size_pw) * 0.5 
+    end
+
+    if map.size_ph < display.size_ph then
+        offset_mod_py = offset_mod_py + (display.size_ph - map.size_ph) * 0.5 
+    end
+
+
     -- this is a cache of tilesetBatches to be drawn for this layer    
     local batches = {}
    
