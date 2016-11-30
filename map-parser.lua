@@ -167,14 +167,18 @@ function module:draw(map, view_x, view_y, display)
     local offset_mod_px = math.fmod(view_x, tile_w)
     local offset_mod_py = math.fmod(view_y,  tile_h)
     
-    if map.size_pw < display.size_pw then
+    -- if the map is smaller than the display then centre it in the middle of
+    -- the display by setting the offset mod accordingly
+    if map.size_pw * display.scale < display.size_pw then
         offset_mod_px = offset_mod_px + (display.size_pw - map.size_pw) * 0.5 
     end
 
-    if map.size_ph < display.size_ph then
+    if map.size_ph * display.scale < display.size_ph then
         offset_mod_py = offset_mod_py + (display.size_ph - map.size_ph) * 0.5 
     end
-
+    
+    offset_mod_px = offset_mod_px * display.scale
+    offset_mod_py = offset_mod_py * display.scale
 
     -- this is a cache of tilesetBatches to be drawn for this layer    
     local batches = {}
@@ -213,22 +217,19 @@ function module:draw(map, view_x, view_y, display)
 					end
 
 					-- where to we draw the tile in display pixels
-					local tile_px = layer_tx * tile_w + tile.data.tileoffset.x;
-					local tile_py = layer_ty * tile_h - tile.data.tileoffset.y;
+					local tile_px = x * tile_w + tile.data.tileoffset.x;
+					local tile_py = y * tile_h - tile.data.tileoffset.y;
 
 					tile.batch:add(tile.quad, tile_px, tile_py, 0) 
 				end
             end
         end
 
-        log.debug("batches", batches)
-
         -- now draw all the batches we used in this layer
         for _, batch in pairs(batches) do
-            print ("draw that batch", _, batch, offset_mod_px, offset_mod_py, display.scale, display.scale)
             
             batch:flush()
-            love.graphics.draw(batch, offset_mod_px, offset_mod_py, 0,
+            love.graphics.draw(batch, -offset_mod_px, -offset_mod_py, 0,
                                display.scale, display.scale)
         end
     end
