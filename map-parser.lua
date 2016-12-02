@@ -193,8 +193,8 @@ function module:draw(map, view_x, view_y, display)
 
     -- TODO make this more efficient once this drawing functionality is complete
     -- stop the map jitering as we try to scroll over its bounds
-    if offset_tx == 0 or offset_tx == max_tx then offset_mod_px = 0 end
-    if offset_ty == 0 or offset_ty == max_ty then offset_mod_py = 0 end
+    if offset_mod_px < 0 or offset_tx == max_tx then offset_mod_px = 0 end
+    if offset_mod_py < 0 or offset_ty == max_ty then offset_mod_py = 0 end
 
     -- this is a cache of tilesetBatches to be drawn for this layer    
     local batches = {}
