@@ -128,11 +128,9 @@ function module:load(path, display)
             draw_layers[#draw_layers + 1] = layer
         end
     end
-    -- load the tileset
-    -- iterate over layers
-    --      load tiles into tilelayer
-
+    
     return {
+        total_tiles = data.width * data.height,
         size_pw = data.width * data.tilewidth,
         size_ph = data.height * data.tileheight,
         tiles = tiles,
@@ -155,17 +153,30 @@ function module:draw(map, view_x, view_y, display)
     local display_tw = math.floor(display.size_pw / display.scale / tile_w)
     local display_th = math.floor(display.size_ph / display.scale / tile_h)
   
-	-- get the number of tiles to draw, make sure we stay in the bounds of the map	
-	local draw_tw = math.min(display_tw, map.data.width)
-	local draw_th = math.min(display_th, map.data.height)
- 
+	-- get the number of tiles to draw, make sure we stay in the maps bounds - 
+    -- NOTE that we add 1 to the display_tx here as we want to draw an extra
+    -- tile if we are able to scroll, the extra tiles allows us to draw
+    -- partially offscreen tiles
+	local draw_tw = math.min(display_tw + 1, map.data.width)
+	local draw_th = math.min(display_th + 1, map.data.height)
+    
+    -- calculate the maximum x and y tiles we can draw this map from (we draw
+    -- from top left coordinates, so if the screen is 10x10 and the map is 12x15
+    -- then the values would be 2, 5)
+    local max_tx = map.data.width - draw_tw
+    local max_ty = map.data.height - draw_th
+
     -- the map position in tiles
     local offset_tx = math.floor(view_x / tile_w)
     local offset_ty = math.floor(view_y / tile_h) 
+    
+    -- limit this postition so that the view stays within the drawable area
+    offset_tx = math.min(max_tx, math.max(offset_tx, 0))
+    offset_ty = math.min(max_ty, math.max(offset_ty, 0))
 
     -- the offset in pixels (for smooth scrolling)
     local offset_mod_px = math.fmod(view_x, tile_w)
-    local offset_mod_py = math.fmod(view_y,  tile_h)
+    local offset_mod_py = math.fmod(view_y, tile_h)
     
     -- if the map is smaller than the display then centre it in the middle of
     -- the display by setting the offset mod accordingly
@@ -180,6 +191,11 @@ function module:draw(map, view_x, view_y, display)
     offset_mod_px = offset_mod_px * display.scale
     offset_mod_py = offset_mod_py * display.scale
 
+    -- TODO make this more efficient once this drawing functionality is complete
+    -- stop the map jitering as we try to scroll over its bounds
+    if offset_tx == 0 or offset_tx == max_tx then offset_mod_px = 0 end
+    if offset_ty == 0 or offset_ty == max_ty then offset_mod_py = 0 end
+
     -- this is a cache of tilesetBatches to be drawn for this layer    
     local batches = {}
    
@@ -187,8 +203,8 @@ function module:draw(map, view_x, view_y, display)
     -- each layer in case that batch is used in the layer or there are animated
     -- tiles in that layer.
     for _, layer in ipairs(map.draw_layers) do
-		for y = 0, draw_tw - 1 do
-			for x = 0, draw_tw - 1 do
+        for y = 0, draw_th - 1 do
+            for x = 0, draw_tw - 1 do
 				-- add the course offset in tiles so we can get the correct region
 				local layer_tx = offset_tx + x
                 local layer_ty = offset_ty + y
@@ -196,17 +212,19 @@ function module:draw(map, view_x, view_y, display)
 				-- get the tile add one as we are in lua land
                 local tile_index = layer_ty * layer.width + layer_tx + 1 
                 local tile_id = layer.data[tile_index] 
-				
-	
-				--log.debug("xy        ", x, y)
-				--log.debug("layer_txy ", layer_tx, layer_ty)
-				--log.debug("map_txy   ", offset_tx, offset_ty)
-				--log.debug("tile_index", tile_index)
-				--log.debug("tile_id   ", tile_id)
-				--log.debug("================")
-				
-				--  zero means there is no tile 
-				if tile_id ~= 0 then	
+			    
+                if tile_index > map.total_tiles then
+                  log.error("Error drawing tile")
+                    log.error("xy        ", x, y)
+                    log.error("layer_txy ", layer_tx, layer_ty)
+                    log.error("map_txy   ", offset_tx, offset_ty)
+                    log.error("tile_index", tile_index)
+                    log.error("tile_id   ", tile_id)
+    
+                    love.event.quit()
+                    goto fail
+                -- zero means there is no tile 
+                elseif tile_id ~= 0 then	
                     -- add one to the array as the tile_ids are 0 indexed
 					local tile = map.tiles[tile_id]
 
@@ -220,7 +238,7 @@ function module:draw(map, view_x, view_y, display)
 					local tile_px = x * tile_w + tile.data.tileoffset.x;
 					local tile_py = y * tile_h - tile.data.tileoffset.y;
 
-					tile.batch:add(tile.quad, tile_px, tile_py, 0) 
+		            tile.batch:add(tile.quad, tile_px, tile_py, 0) 
 				end
             end
         end
@@ -233,6 +251,7 @@ function module:draw(map, view_x, view_y, display)
                                display.scale, display.scale)
         end
     end
+    ::fail::
 end
 
 return module
