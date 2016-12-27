@@ -1,11 +1,18 @@
+require "set_paths"
+
 local log = require "lib.log"
-local map = require "map-parser"
+local parser = require "map-parser"
 local anim8 = require "lib.anim8"
+
+-- controllers are defined here so we can inject them where they need to bu used
+local physicsCtl = require "physics"
+local mappingCtl = require "mapping"
+
 local time
 local hannah
 local run
 
-local map_data
+local map
 local display = {
     scale = 2,
     size_pw = love.graphics.getWidth(),
@@ -23,11 +30,9 @@ function love.load(args)
 	
     log.info("args", args, display)
 
-    -- here we have some dummy data for the display
-    -- map_data = map:load("assets/maps/test.lua", display)
-    map_data = map:load("assets/maps/w1l1.lua", display)
+    map = parser.load("assets/maps/w1l1.lua", display, mappingCtl, physicsCtl)
 
-    love.graphics.setDefaultFilter("nearest")
+    love.graphics.setDefaultFilter("nearest", "nearest")
 	myShader = love.graphics.newShader[[
 		extern number factor = 0;
 		vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
@@ -56,18 +61,20 @@ local view_px = 0
 local view_py = 0
 
 function love.update(dt)
-    if love.keyboard.isDown("escape") then love.event.quit() end
+    local speed = 10
+	
+	if love.keyboard.isDown("escape") then love.event.quit() end
     
     if love.keyboard.isDown("a", "left") then
-        view_px = view_px - 10
+        view_px = view_px - speed
     elseif love.keyboard.isDown("d", "right") then
-        view_px = view_px + 10
+        view_px = view_px + speed
     end
 
     if love.keyboard.isDown("w", "up") then
-        view_py = view_py - 10
+        view_py = view_py - speed
     elseif love.keyboard.isDown("s", "down") then
-        view_py = view_py + 10
+        view_py = view_py + speed
     end
 
 
@@ -78,13 +85,13 @@ function love.update(dt)
 end
 
 function love.draw()
-	love.graphics.setShader(myShader)
+--	love.graphics.setShader(myShader)
 
-    run:draw(hannah, 250, 64, 0, display.scale)
-    map:draw(map_data, view_px, view_py, display)
+    run:draw(hannah, 250, 64, 0, 1)
+    mappingCtl.draw(map, view_px, view_py, display)
+    physicsCtl.draw(map.phys_layers[1], view_px, view_py, display.scale)
 	
-    love.graphics.setShader()
+--    love.graphics.setShader()
     
-
 --    love.event.quit()
 end

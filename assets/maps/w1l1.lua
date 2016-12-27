@@ -1,14 +1,14 @@
 return {
   version = "1.1",
   luaversion = "5.1",
-  tiledversion = "0.14.2",
+  tiledversion = "0.17.2",
   orientation = "orthogonal",
   renderorder = "left-down",
   width = 50,
   height = 50,
   tilewidth = 32,
   tileheight = 32,
-  nextobjectid = 33,
+  nextobjectid = 40,
   properties = {},
   tilesets = {
     {
@@ -34,7 +34,7 @@ return {
   layers = {
     {
       type = "tilelayer",
-      name = "Tile Layer 1",
+      name = "tiles-main",
       x = 0,
       y = 0,
       width = 50,
@@ -100,17 +100,18 @@ return {
     },
     {
       type = "objectgroup",
-      name = "Object Layer 1",
+      name = "collision",
       visible = true,
       opacity = 1,
       offsetx = 0,
       offsety = 0,
+      draworder = "topdown",
       properties = {},
       objects = {
         {
           id = 3,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 512,
           y = 992,
@@ -123,7 +124,7 @@ return {
         {
           id = 4,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 224,
           y = 1024,
@@ -136,7 +137,7 @@ return {
         {
           id = 5,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 160,
           y = 1056,
@@ -151,7 +152,7 @@ return {
         {
           id = 7,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 32,
           y = 1376,
@@ -164,7 +165,7 @@ return {
         {
           id = 8,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 224,
           y = 1376,
@@ -177,7 +178,7 @@ return {
         {
           id = 9,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 416,
           y = 1376,
@@ -190,7 +191,7 @@ return {
         {
           id = 10,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 608,
           y = 1376,
@@ -203,7 +204,7 @@ return {
         {
           id = 11,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 704,
           y = 1344,
@@ -216,7 +217,7 @@ return {
         {
           id = 12,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 864,
           y = 1280,
@@ -229,7 +230,7 @@ return {
         {
           id = 14,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1024,
           y = 1440,
@@ -242,7 +243,7 @@ return {
         {
           id = 15,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1184,
           y = 1376,
@@ -255,7 +256,7 @@ return {
         {
           id = 16,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1312,
           y = 1312,
@@ -268,7 +269,7 @@ return {
         {
           id = 17,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1344,
           y = 1216,
@@ -281,7 +282,7 @@ return {
         {
           id = 18,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1376,
           y = 1184,
@@ -294,7 +295,7 @@ return {
         {
           id = 19,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1504,
           y = 1120,
@@ -307,7 +308,7 @@ return {
         {
           id = 20,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1536,
           y = 1152,
@@ -320,7 +321,7 @@ return {
         {
           id = 21,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1504,
           y = 928,
@@ -333,7 +334,7 @@ return {
         {
           id = 22,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1536,
           y = 960,
@@ -346,7 +347,7 @@ return {
         {
           id = 23,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1376,
           y = 1056,
@@ -359,7 +360,7 @@ return {
         {
           id = 24,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1408,
           y = 1088,
@@ -372,7 +373,7 @@ return {
         {
           id = 25,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 832,
           y = 960,
@@ -385,7 +386,7 @@ return {
         {
           id = 26,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 800,
           y = 1024,
@@ -398,7 +399,7 @@ return {
         {
           id = 27,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 800,
           y = 1056,
@@ -411,7 +412,7 @@ return {
         {
           id = 28,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 864,
           y = 1088,
@@ -424,7 +425,7 @@ return {
         {
           id = 29,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 960,
           y = 1120,
@@ -437,7 +438,7 @@ return {
         {
           id = 30,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1056,
           y = 928,
@@ -450,7 +451,7 @@ return {
         {
           id = 31,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 1088,
           y = 960,
@@ -463,7 +464,7 @@ return {
         {
           id = 32,
           name = "",
-          type = "solid",
+          type = "col_solid",
           shape = "rectangle",
           x = 640,
           y = 1024,
@@ -471,6 +472,69 @@ return {
           height = 64,
           rotation = 0,
           visible = true,
+          properties = {}
+        },
+        {
+          id = 39,
+          name = "",
+          type = "",
+          shape = "polyline",
+          x = 512,
+          y = 992,
+          width = 0,
+          height = 0,
+          rotation = 0,
+          visible = true,
+          polyline = {
+            { x = 0, y = 0 },
+            { x = -64, y = 32 }
+          },
+          properties = {}
+        }
+      }
+    },
+    {
+      type = "objectgroup",
+      name = "movers",
+      visible = true,
+      opacity = 1,
+      offsetx = 0,
+      offsety = 0,
+      draworder = "topdown",
+      properties = {},
+      objects = {
+        {
+          id = 34,
+          name = "",
+          type = "",
+          shape = "polyline",
+          x = 288,
+          y = 1152,
+          width = 0,
+          height = 0,
+          rotation = 0,
+          visible = true,
+          polyline = {
+            { x = 0, y = 0 },
+            { x = 0, y = 160 }
+          },
+          properties = {}
+        },
+        {
+          id = 36,
+          name = "",
+          type = "",
+          shape = "polyline",
+          x = 1536,
+          y = 1248,
+          width = 0,
+          height = 0,
+          rotation = 0,
+          visible = true,
+          polyline = {
+            { x = 0, y = 0 },
+            { x = 0, y = 192 }
+          },
           properties = {}
         }
       }
