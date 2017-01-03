@@ -1,45 +1,40 @@
-local log = require "lib.log"
-local splash = require "lib.splash"
+local log 		= require "lib.log"
+local splash 	= require "lib.splash"
 
 local module = {}
 -- loads a complete layer into a new world and returns it.
 module.loadLayer = function(data)
-    local world = splash.new()
-    
-    for _, obj in ipairs(data.objects) do
-		module.addObject(world, obj, obj.shape)
+    local objects = {}
+
+    for i, obj in ipairs(data.objects) do
+		objects[i] = module.addObject(world, obj, obj.shape)
 	end
 
-    return world
+    return objects
 end
 
 -- add a shape to the world
 module.addObject = function(world, obj, shape_name)
-	local shape = false
+	local shape
 
 	if shape_name == "rectangle" then
-		shape = splash.aabb(obj.x, obj.y, obj.width, obj.height)
-	end
-	if shape_name == "polyline" then
+		shape = world:rectangle(obj.x, obj.y, obj.width, obj.height)
+    elseif shape_name == "polyline" then
+        local points = {}
 
-		shape = splash.seg(
-		obj.x + obj.polyline[1].x,
-		obj.y + obj.polyline[1].y,
-		obj.x + obj.polyline[2].x,
-		obj.y + obj.polyline[2].y
-		)
-	end
-	if shape_name == "circle" then
-		shape = splash.circle(obj.x, obj.y, obj.radius)
-	end
-
-	if shape then
-		log.debug("adding", obj.shape)
-		world:add(obj, shape)
+        for _, vector in ipairs(obj.polyline) do
+            table.insert(points, vector.x)
+            table.insert(points, vector.y)
+        end
+        
+        shape = world:polygon(points)
+    elseif shape_name == "circle" then
+		shape = world:circle(obj.x, obj.y, obj.radius)
 	else
-		log.error("could not load shape", shape_name, obj)
+        log.error("could not load shape", shape_name, obj)
 	end
-
+    
+    return shape
 end
 
 module.moveObject = function(world, object, x, y)

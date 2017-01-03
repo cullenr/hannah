@@ -7,61 +7,47 @@ local world 	= nil
 system.filter = tiny.requireAll("shape", "physics")
 
 function system:init(data)
-   world = physics.init(data) 
+   self.world = physics.init(data) 
 end
 
 function system:process(entity, dt)
+    -- TODO add a box and check each shape collides with it to set their 
+    -- sleeping value    
+    -- checkSleep()
+    
+    move()
 
---[[
-    local geom = entity.geometry
-    local vel = entity.velocity
-    local col = entity.colliider
+    if bit.band(collision.self.collider.mask, collision.other.collider.mask) then
 
-    for _, world in ipairs(worlds) do
-        -- TODO change this to moveExt so we can handle trigger collisions
-        -- TODO change this to the physics.moveExt version
-        geom.x, geom.y, collisions = physics.move(entity, 
-                                 geom.x + vel.x + dt, geom.y + vel.y * dt, 
-                                 col.filter)
-
-		for _, collision in ipairs(collisions) do
-			if bit.band(collision.self.collider.mask, collision.other.collider.mask)
-			then
-
-			end
-		end
     end
-]]--
 end
 
 local function addShape(world, obj, shape_name)
-	local shape = false
+	local shape
 
 	if shape_name == "rectangle" then
 		shape = world:rectangle(obj.x, obj.y, obj.width, obj.height)
-	end
-	if shape_name == "polyline" then
-        shape = world:polygon()
+    elseif shape_name == "polyline" then
+        local points = {}
 
-		shape = splash.seg(
-		obj.x + obj.polyline[1].x,
-		obj.y + obj.polyline[1].y,
-		obj.x + obj.polyline[2].x,
-		obj.y + obj.polyline[2].y
-		)
-	end
-	if shape_name == "circle" then
+        for _, vector in ipairs(obj.polyline) do
+            table.insert(points, vector.x)
+            table.insert(points, vector.y)
+        end
+        
+        shape = world:polygon(points)
+    elseif shape_name == "circle" then
 		shape = world:circle(obj.x, obj.y, obj.radius)
-	end
-
-	if not shape then
-		log.error("could not load shape", shape_name, obj)
+	else
+        log.error("could not load shape", shape_name, obj)
 	end
     
     return shape
 end
 
-
+local function move()
+    
+end
 
 function system:onAdd(entity)
     local geom = entity.geometry
