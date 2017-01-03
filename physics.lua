@@ -2,13 +2,12 @@ local log = require "lib.log"
 local splash = require "lib.splash"
 
 local module = {}
-
 -- loads a complete layer into a new world and returns it.
 module.loadLayer = function(data)
     local world = splash.new()
     
     for _, obj in ipairs(data.objects) do
-		module.addShape(world, obj.name, obj)
+		module.addObject(world, obj, obj.shape)
 	end
 
     return world
@@ -38,7 +37,7 @@ module.addObject = function(world, obj, shape_name)
 		log.debug("adding", obj.shape)
 		world:add(obj, shape)
 	else
-		log.error("could not load shape", obj.shape)
+		log.error("could not load shape", shape_name, obj)
 	end
 
 end

@@ -1,5 +1,24 @@
 require "set_paths"
 
+
+function locals()
+  local variables = {}
+  local idx = 1
+  while true do
+    local ln, lv = debug.getlocal(2, idx)
+    if ln ~= nil then
+      variables[ln] = lv
+    else
+      break
+    end
+    idx = 1 + idx
+  end
+  return variables
+end
+
+
+print(_VERSION)
+
 local log = require "lib.log"
 local parser = require "map-parser"
 local anim8 = require "lib.anim8"
